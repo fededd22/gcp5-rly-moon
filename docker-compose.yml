@@ -1,0 +1,49 @@
+services:
+  v2ray-bot:
+    build: .
+    image: v2ray-telegram-bot:latest
+    ports:
+      # Le port hôte se règle via la variable PORT (défaut : 3000, health-check uniquement)
+      - "${PORT:-3000}:${PORT:-3000}"
+      # Ports V2Ray/VLESS/VMess/Trojan (slots A et B)
+      - "10080:10080"
+      - "10081:10081"
+      - "10082:10082"
+      - "10090:10090"
+      - "10091:10091"
+      - "10092:10092"
+    environment:
+      - PORT=${PORT:-3000}
+      - APP_URL=${APP_URL:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_ADMIN_CHAT_ID=${TELEGRAM_ADMIN_CHAT_ID:-}
+      - DATA_DIR=/app/data
+    # Nombre de descripteurs de fichiers (sockets) que le conteneur peut
+    # ouvrir en même temps. Chaque utilisateur connecté = au moins 1 socket
+    # (WebSocket) + 1 socket vers xray côté proxy -- avec potentiellement des
+    # milliers d'utilisateurs simultanés, la limite par défaut du démon
+    # Docker (souvent 1024) est bien trop basse et provoque des échecs de
+    # connexion silencieux une fois ce plafond atteint.
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      # Persiste le binaire V2Ray téléchargé (évite de le re-télécharger à chaque redémarrage du conteneur)
+      - v2ray_bin:/app/bin
+      # Persiste admin.json/settings.json/clients.json (dossier /app/data,
+      # séparé du code de l'appli pour ne pas masquer /app/dist). Sans ce
+      # volume, ces fichiers vivent uniquement sur le disque éphémère du
+      # conteneur : un redémarrage/redeploy les efface, admin.json revient à
+      # "aucun admin", et le premier message reçu ensuite (de n'importe qui)
+      # devenait silencieusement le nouvel admin principal -- irrévocable.
+      # Toujours définir aussi TELEGRAM_ADMIN_CHAT_ID en variable
+      # d'environnement : le code le traite désormais comme prioritaire sur
+      # ce fichier, donc même une réinitialisation accidentelle du volume ne
+      # peut pas faire perdre la propriété du bot.
+      - v2ray_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  v2ray_bin:
+  v2ray_data:
