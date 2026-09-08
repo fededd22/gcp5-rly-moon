@@ -1,0 +1,6 @@
+{
+  "name": "V2Ray VLESS Server + Telegram Bot",
+  "description": "A high-performance V2Ray VLESS/VMess/Trojan WebSocket server, administered entirely through a Telegram bot (admin-only).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
